@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title>Tree Example</title>
+	<link rel="stylesheet" href="css/bootstrap.css" />
+	<link rel="stylesheet" href="css/style.css" />
+	 <style>	
+	.node {
+		cursor: pointer;
+	}
+
+	.node circle {
+	  fill: #fff;
+	  stroke: steelblue;
+	  stroke-width: 3px;
+	  
+	}
+
+	.node text {
+	  font: 12px sans-serif;
+	  
+	}
+
+	.link {
+	  fill: none;
+	  stroke: #ccc;
+	  stroke-width: 2px;
+	}
+	
+    </style>
+  </head>
+
+  <body>
+	<div class="container">
+		<div class="header col-md-12">		
+			<h1>EIBI Resource Distribution</h1>	
+			<span class="tag_name">Select a unit, for it's detailed analysis</span>
+		</div>
+		<div class="content col-md-12">
+			<div class="hierarchy"></div>
+		</div>
+	</div>
+<!-- load the d3.js library -->	
+<script src="http://d3js.org/d3.v3.min.js"></script>
+	
+<script>
+var treeData_obj = {};
+var treeData =  [{
+    "name": "James Smith",
+    "parent": "null",
+    "children": [
+      {
+        "name": "Schraeder, Chelsey M",
+        "parent": "James Smith",
+		"children":[{
+			"name": "aloknath",
+			"parent": "Schraeder, Chelsey M",
+		},
+		{
+			"name": "aloknath",
+			"parent": "Schraeder, Chelsey M",
+		}]
+      },
+      {
+        "name": "Woehrle, Judd C",
+        "parent": "James Smith"
+      },
+	  {
+        "name": "Kroll, Sterling H",
+        "parent": "James Smith"
+      },
+	  {
+        "name": "kumar, Vinay",
+        "parent": "James Smith"
+      },
+	  {
+        "name": "Garza, DiAnne",
+        "parent": "James Smith"
+      },
+	  {
+        "name": "Renouf, Michael",
+        "parent": "James Smith"
+      },
+	  {
+        "name": "Desani, Swapna",
+        "parent": "James Smith"
+      },{
+        "name": "Hollinger, Marle E",
+        "parent": "James Smith"
+      },
+	  {
+        "name": "Sampath, Lokesh",
+        "parent": "James Smith"
+      },{
+        "name": "Holloman, Keith",
+        "parent": "James Smith"
+      }	  
+    ]
+  }];
+
+var child_treeData_obj = {};
+var childTreeData = [];
+ 
+//Level 0 parent 
+treeData_obj["name"] = "James Smith";
+treeData_obj["parent"] = null;
+treeData_obj["children"] = [];
+treeData.push(treeData_obj);
+
+var parent_name = treeData_obj["name"];
+
+// ************** Generate the tree diagram	 *****************
+var margin = {top: 40, right: 120, bottom: 20, left: 120},
+	width = 1200,
+	height = 1024;
+	
+var i = 0,
+	duration = 0,
+	root;
+
+var tree = d3.layout.tree()
+	.size([1100, 1024]);
+
+var diagonal = d3.svg.diagonal()
+	.projection(function(d) { return [d.x, d.y]; });
+
+var svg = d3.select(".hierarchy").append("svg")
+	.attr("width", width + margin.right + margin.left)
+	.attr("height", height + margin.top + margin.bottom)
+    .append("g")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+/*
+d3.json("data/sample.json",function(json){
+	treeData = tree(json);
+
+});	
+*/
+console.log(treeData);
+root = treeData[0];
+root.x0 = height / 2;
+root.y0 = 0;
+  
+update(root);
+
+d3.select(self.frameElement).style("height", "500px");
+
+function update(source) {
+
+  // Compute the new tree layout.
+  var nodes = tree.nodes(root).reverse(),
+	  links = tree.links(nodes);
+
+  // Normalize for fixed-depth.
+  nodes.forEach(function(d) { d.y = d.depth * 180; });
+
+  // Update the nodes…
+  var node = svg.selectAll("g.node")
+	  .data(nodes, function(d) { return d.id || (d.id = ++i); })
+	  .style("cursor", "pointer");
+	  
+
+  // Enter any new nodes at the parent's previous position.
+  var nodeEnter = node.enter().append("g")
+	  .attr("class", "node")
+	  .attr("transform", function(d) { return "translate(" + source.x0 + "," + source.y0 + ")"; })	  
+	  .on("click", click);
+
+  nodeEnter.append("circle")
+	  .attr("r", 1e-6)
+	  .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+
+  nodeEnter.append("text")
+	  .attr("x", function(d) { return d.children || d._children ? -13 : 13; })
+	  .attr("dy", ".35em")
+	  .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
+	  .text(function(d) { return d.name; })
+	  .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; })
+	  .style("font-weight", "bold")
+	  .style("fill-opacity", 1e-6);	  
+
+  // Transition nodes to their new position.
+  var nodeUpdate = node.transition()
+	  .duration(duration)
+	  .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+
+  nodeUpdate.select("circle")
+	  .attr("r", 10)
+	  .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+	  
+  nodeUpdate.select("text")
+	  .style("fill-opacity", 1);
+	  
+  // Transition exiting nodes to the parent's new position.
+  var nodeExit = node.exit().transition()
+	  .duration(duration)
+	  .attr("transform", function(d) { return "translate(" + source.x + "," + source.y + ")"; })
+	  .style("color", "#fff")
+	  .remove();
+
+  nodeExit.select("circle")
+	  .attr("r", 1e-6);
+	  
+  nodeExit.select("text")
+	  .style("fill-opacity", 1e-6);
+
+  // Update the links…
+  var link = svg.selectAll("path.link")
+	  .data(links, function(d) { return d.target.id; });
+
+  // Enter any new links at the parent's previous position.
+  link.enter().insert("path", "g")
+	  .attr("class", "link")
+	  .attr("d", function(d) {
+		var o = {x: source.x0, y: source.y0};
+		return diagonal({source: o, target: o});
+	  });
+
+  // Transition links to their new position.
+  link.transition()
+	  .duration(duration)
+	  .attr("d", diagonal);
+
+  // Transition exiting nodes to the parent's new position.
+  link.exit().transition()
+	  .duration(duration)
+	  .attr("d", function(d) {
+		var o = {x: source.x, y: source.y};
+		return diagonal({source: o, target: o});
+	  })
+	  .remove();
+
+  // Stash the old positions for transition.
+  nodes.forEach(function(d) {
+	d.x0 = d.x;
+	d.y0 = d.y;
+  });
+}
+
+// Toggle children on click.
+function click(d) {
+  if (d.children) {
+	d._children = d.children;
+	d.children = null;
+  } else {
+	d.children = d._children;
+	d._children = null;
+  }
+  update(d);
+}
+
+
+function tree(nodes)
+{
+	var nodeById = {};
+	nodes.forEach(function(d){
+		nodeById[d.id] = d;
+	});
+	
+	nodes.forEach(function(d){
+		if("Supervisor_party_id" in d)
+		{
+			var manager = nodeById[d.Supervisor_party_id];
+			if(manager.children) manager.children.push(d);
+			else manager.children = [d];
+		}
+	});
+	return nodes[0];
+}
+</script>
+	
+  </body>
+</html>
